@@ -28,13 +28,13 @@ module.exports = function (app, db) {
           limit.remaining = opts.total
         }
 
-        // do not allow negative remaining
-        limit.remaining = Math.max(Number(limit.remaining) - 1, -1)
+        // allow negative remaining: "-1" means it's the first time the limit has exceeded
+        limit.remaining = Number(limit.remaining) - 1
         db.set(key, JSON.stringify(limit), 'PX', opts.expire, function (e) {
           if (!opts.skipHeaders) {
             res.set('X-RateLimit-Limit', limit.total)
             res.set('X-RateLimit-Reset', Math.ceil(limit.reset / 1000)) // UTC epoch seconds
-            res.set('X-RateLimit-Remaining', Math.max(limit.remaining,0))
+            res.set('X-RateLimit-Remaining', limit.remaining)
           }
 
           if (limit.remaining >= 0) return next()
